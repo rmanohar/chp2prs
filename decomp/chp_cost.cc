@@ -36,9 +36,11 @@ void ChpCost::dump_actsim_conf(std::string conf_file, act_chp_lang_t *c, Process
   fprintf(ff, "      begin decomp_%s<>\n", buf);
   std::vector<int> delays{};
   std::vector<int> energies{};
-  _gen_actsim_conf (c, delays, energies);
+  double leakage{};
+  _gen_actsim_conf (c, delays, energies, leakage);
   Assert (delays.size()==energies.size(), "what");
-  fprintf(ff, "      int_table delays ");
+  fprintf(ff, "      real leakage %f", leakage);
+  fprintf(ff, "\n      int_table delays ");
   for (auto x : delays) { fprintf(ff, "%d ", x); }
   fprintf(ff, "\n      int_table energies ");
   for (auto x : energies) { fprintf(ff, "%d ", x); }
@@ -49,7 +51,7 @@ void ChpCost::dump_actsim_conf(std::string conf_file, act_chp_lang_t *c, Process
   fclose(ff);
 }
 
-bool ChpCost::_gen_actsim_conf(act_chp_lang_t *c, std::vector<int> &ds, std::vector<int> &es)
+bool ChpCost::_gen_actsim_conf(act_chp_lang_t *c, std::vector<int> &ds, std::vector<int> &es, double &leak)
 {
   Assert (!thread_mode, "limited functionality in multi-threaded mode!");
   if (!c) return false;
@@ -61,6 +63,8 @@ bool ChpCost::_gen_actsim_conf(act_chp_lang_t *c, std::vector<int> &ds, std::vec
     auto ebi = expr_metrics(c->u.assign.e,bitwidth(c->u.assign.id));
     auto edel = (ebi && ebi->getDelay().exists()) ? (ebi->getDelay().typ_val)*1e12 : 0;
     auto epow = (ebi && ebi->getDynamicPower().exists()) ? (ebi->getDynamicPower().typ_val)*1e9 : 0;
+    auto eleak = (ebi && ebi->getStaticPower().exists()) ? (ebi->getStaticPower().typ_val) : 0;
+    leak += eleak;
     ds.push_back( int(assn_delay + edel) );
     es.push_back( int(epow) );
     return true;
@@ -70,6 +74,8 @@ bool ChpCost::_gen_actsim_conf(act_chp_lang_t *c, std::vector<int> &ds, std::vec
     auto ebi = expr_metrics(c->u.comm.e,bitwidth(c->u.comm.chan));
     auto edel = (ebi && ebi->getDelay().exists()) ? (ebi->getDelay().typ_val)*1e12 : 0;
     auto epow = (ebi && ebi->getDynamicPower().exists()) ? (ebi->getDynamicPower().typ_val)*1e9 : 0;
+    auto eleak = (ebi && ebi->getStaticPower().exists()) ? (ebi->getStaticPower().typ_val) : 0;
+    leak += eleak;
     ds.push_back( int(send_delay + edel) );
     es.push_back( int(epow) );
     return true;
@@ -86,7 +92,7 @@ bool ChpCost::_gen_actsim_conf(act_chp_lang_t *c, std::vector<int> &ds, std::vec
     bool exists = false;
     for (listitem_t *li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) 
     {
-      exists |= _gen_actsim_conf ((act_chp_lang_t *) list_value (li), ds, es);
+      exists |= _gen_actsim_conf ((act_chp_lang_t *) list_value (li), ds, es, leak);
     }
     if (list_length(c->u.semi_comma.cmd)>1 && exists) {
       ds.push_back(int(list_length(c->u.semi_comma.cmd)));
@@ -100,19 +106,19 @@ bool ChpCost::_gen_actsim_conf(act_chp_lang_t *c, std::vector<int> &ds, std::vec
     bool exists = false;
     for (listitem_t *li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) 
     {
-      exists |= _gen_actsim_conf ((act_chp_lang_t *) list_value (li), ds, es);
+      exists |= _gen_actsim_conf ((act_chp_lang_t *) list_value (li), ds, es, leak);
     }
     return exists;
   }
   break;
 
   case ACT_CHP_DOLOOP: {
-    _gen_actsim_conf (c->u.gc->s, ds, es);
+    _gen_actsim_conf (c->u.gc->s, ds, es, leak);
   } 
   case ACT_CHP_LOOP: {
     ds.push_back(1); // dummy val for now
     es.push_back(0);
-    bool exists = _gen_actsim_conf (c->u.gc->s, ds, es);
+    bool exists = _gen_actsim_conf (c->u.gc->s, ds, es, leak);
     return exists;
   }
   break;
@@ -132,16 +138,18 @@ bool ChpCost::_gen_actsim_conf(act_chp_lang_t *c, std::vector<int> &ds, std::vec
       auto ebi = expr_metrics(gc->g, 1);
       auto edel = (ebi && ebi->getDelay().exists()) ? (ebi->getDelay().typ_val)*1e12 : 0;
       auto epow = (ebi && ebi->getDynamicPower().exists()) ? (ebi->getDynamicPower().typ_val)*1e9 : 0;
+      auto eleak = (ebi && ebi->getStaticPower().exists()) ? (ebi->getStaticPower().typ_val) : 0;
       double br_del = edel + capture_delay;
       if (br_del > max_del) max_del = br_del;
       tot_energy += epow;
+      leak += eleak;
       gc = gc->next;
     }
     ds.push_back(int(max_del));
     es.push_back(int(tot_energy));
     gc = c->u.gc;
     while (gc) {
-      exists |= _gen_actsim_conf (gc->s, ds, es);
+      exists |= _gen_actsim_conf (gc->s, ds, es, leak);
       gc = gc->next;
     }
     return exists;
