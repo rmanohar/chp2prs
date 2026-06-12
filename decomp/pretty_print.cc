@@ -667,3 +667,71 @@ void _lift_probes (GraphWithChanNames &g, Sequence seq)
   }   
   return;
 }
+
+bool _has_probe_of_chan (const ChpExprDag &e, ChanId c)
+{
+  bool ret = false;
+
+  ChpExprDag::iterNodes (e,
+			 [&] (const ChpExprDag::Node &n) -> void {
+			   if (n.type() == IRExprTypeKind::ChanProbe) {
+			    if (n.u_probe().id == c) {
+            ret = true;
+          } 
+			   }
+			 });
+			  
+  return ret;
+}
+
+bool _has_probe_of_chan (const Sequence &seq, ChanId c)
+{
+  Block *curr = seq.startseq->child();
+  while (curr->type() != BlockType::EndSequence) {
+    switch (curr->type()) {
+    case BlockType::Basic:
+      switch (curr->u_basic().stmt.type()) {
+      case StatementType::Assign:
+        if (_has_probe_of_chan (curr->u_basic().stmt.u_assign().e, c)) return true;
+      break;
+      case StatementType::Send:
+        if (_has_probe_of_chan (curr->u_basic().stmt.u_send().e.m_dag, c)) return true;
+      break;
+      case StatementType::Receive:
+      break;
+      }
+    break;
+      
+    case BlockType::Par:
+      for (auto &branch : curr->u_par().branches) {
+        if (_has_probe_of_chan (branch, c)) return true;
+      }
+    break;
+      
+    case BlockType::Select:
+      for (auto &branch : curr->u_select().branches) {
+        if (branch.g.type() == IRGuardType::Expression) {
+          if (_has_probe_of_chan (branch.g.u_e().e.m_dag, c)) return true;
+        }
+        if (_has_probe_of_chan (branch.seq, c)) return true;
+      }
+    break;
+      
+    case BlockType::DoLoop:
+      if (_has_probe_of_chan (curr->u_doloop().branch, c)) return true;
+    break;
+      
+    case BlockType::StartSequence:
+    case BlockType::EndSequence:
+      hassert(false);
+    break;
+    }
+    curr = curr->child();
+  }
+  return false;
+}
+
+bool _has_probe_of_chan (const GraphWithChanNames &g, ChanId c)
+{
+  return _has_probe_of_chan (g.graph.m_seq, c);
+}

@@ -50,4 +50,6 @@ void _lift_probes (GraphWithChanNames &);
 
 void _lift_probes (GraphWithChanNames &, Sequence);
 
+bool _has_probe_of_chan (const GraphWithChanNames &, ChanId);
+
 #endif
