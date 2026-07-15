@@ -85,7 +85,7 @@ class ChpCost {
         }
 
         void dump_actsim_conf(std::string, act_chp_lang_t *, Process *);
-        bool _gen_actsim_conf(act_chp_lang_t *, std::vector<int> &, std::vector<int> &);
+        bool _gen_actsim_conf(act_chp_lang_t *, std::vector<int> &, std::vector<int> &, double &);
 
         void clear();
         void add_procs (std::vector<act_chp_lang_t *>);

@@ -1,14 +1,12 @@
-defproc mc10 (chan?(int) L1, L2; chan!(int) R) 
+deftype ss (
+    int<8> a;
+    int<8> b
+) {}
+
+defproc mc10 (chan?(ss) A; chan!(ss) B)
 {
-	int x, y;
-  chp {
-    x:=0;y:=0;
-    *[ 
-      [ #L1 -> L1?x
-      []#L2 -> L2?x
-      ];
-      L1?y;
-      R!(x+y)
-    ]
-  }
+    ss x;
+    chp {
+        *[ A?x ; B!x ; B!x ]
+    }
 }

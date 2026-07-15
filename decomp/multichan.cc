@@ -47,6 +47,11 @@ void MultiChan::process_multichans()
     for ( auto mi : {mc_info_recv, mc_info_send} ) {
     for ( auto cbp : mi )
     {
+        if (_has_probe_of_chan(*g, cbp.first)) {
+            auto aid = g->name_from_chan.at(cbp.first);
+            fatal_error ("probe and multichan on same channel (%s) is not allowed",
+                aid->getName());
+        }
         alias_number = 0;
         _update_with_aliases (g->graph.m_seq, cbp.first, mi);
         int tmp = alias_number;
