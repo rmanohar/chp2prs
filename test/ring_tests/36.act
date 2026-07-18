@@ -25,17 +25,27 @@ defproc sender (chan!(bool) A, B)
     }
 }
 
+defproc buf (chan?(bool) l; chan!(bool) r)
+{
+	bool x;
+	chp{
+		*[l?x; r!x]
+	}
+}
+
 defproc snk (chan?(bool) l)
 {
 	bool x;
 	chp{
-		*[l?x; log("%d", x)]
+		*[l?x]
 	}
 }
 
 defproc testproc (chan?(bool) X1, X2; chan!(bool) Y)
 {
+  chan(bool) C;
   sender s(X1,X2);
-  receiver r(X1,X2,Y);
+  receiver r(X1,X2,C);
+  buf b(C,Y);
   snk ss(Y);
 }
