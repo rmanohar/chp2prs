@@ -718,7 +718,8 @@ void SDTEngine::_emit_expr_helper (int id, int *width, Expr *e)
     break;
 
   case E_PROBE:
-    fatal_error ("fix probes please");
+    act_error_ctxt (stderr);
+    fatal_error ("General probed expressions are not currently supported by sdt.");
     break;
     
   case E_FUNCTION:
@@ -918,7 +919,8 @@ void SDTEngine::_expr_collect_vars (Expr *e, int collect_phase)
     break;
 
   case E_PROBE:
-    fatal_error ("fix probes please");
+    act_error_ctxt (stderr);
+    fatal_error ("General probed expressions are not currently supported by sdt.");
     break;
     
   case E_FUNCTION:
