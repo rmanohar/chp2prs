@@ -210,25 +210,52 @@ void ActSynthesize::finalSynthesis (Process *p)
 bool ActSynthesize::checkSynth (ActPass *ap, Process *p)
 {
   if (p->getlang() && p->getlang()->getchp()) {
-    return _check (p->getlang()->getchp()->c);
+    struct pHashtable *H;
+    bool ret;
+    H = phash_new (4);
+    ret = _check (H, p->CurScope(), p->getlang()->getchp()->c);
+    phash_free (H);
+    return ret;
   }
   else {
     return true;
   }
 }
 
-
-bool ActSynthesize::_check (act_chp_lang_t *c)
+bool ActSynthesize::_check (struct pHashtable *H, Scope *sc, act_chp_lang_t *c)
 {
   listitem_t *li;
   act_chp_gc_t *gc;
+  act_connection *conn;
+  phash_bucket_t *b;
+  static int nest = 0;
+
   if (!c) return true;
+
+  nest++; // used to filter top-level concurrency
+
   switch (c->type) {
   case ACT_CHP_COMMA:
+    if (nest == 1) {
+      // outer parallel
+      for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
+	act_chp_lang_t *ch = (act_chp_lang_t *) list_value (li);
+	phash_clear (H);
+	if (!_check (H, sc, ch)) {
+	  nest--;
+	  return false;
+	}
+      }
+      return true;
+    }
+    // fall-through: standard check
   case ACT_CHP_SEMI:
     for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
       act_chp_lang_t *ch = (act_chp_lang_t *) list_value (li);
-      if (!_check (ch)) return false;
+      if (!_check (H, sc, ch)) {
+	nest--;
+	return false;
+      }
     }
     break;
 
@@ -243,7 +270,10 @@ bool ActSynthesize::_check (act_chp_lang_t *c)
     for (gc = c->u.gc; gc; gc = gc->next) {
       Assert (!gc->id, "Guard loops still present during synthesis check!");
       if (gc->s) {
-	if (!_check (gc->s)) return false;
+	if (!_check (H, sc, gc->s)) {
+	  nest--;
+	  return false;
+	}
       }
     }
     break;
@@ -259,10 +289,41 @@ bool ActSynthesize::_check (act_chp_lang_t *c)
     }
     if (c->u.comm.flavor != 0) {
       std::string emsg;
-      emsg = "Split communication channels are not synthesizable via the automated flow.";
+      emsg = "Split communication channels are not synthesizable\n\tvia the automated flow.";
       _echp = c;
       _errmsg = Strdup (emsg.c_str());
       return false;
+    }
+    conn = c->u.comm.chan->Canonical (sc);
+    Assert (conn, "Hmm");
+    b = phash_lookup (H, conn);
+    if (!b) {
+      b = phash_add (H, conn);
+      b->i = 0;
+    }
+    if (c->type == ACT_CHP_SEND) {
+      if (b->i == 0 || b->i == 1) {
+	b->i = 1;
+      }
+      else {
+	std::string emsg;
+	emsg = "Internal self-synchronization is not supported\n\tvia the automated synthesis flow.";
+	_echp = c;
+	_errmsg = Strdup (emsg.c_str());
+	return false;
+      }
+    }
+    else {
+      if (b->i == 0 || b->i == 2) {
+	b->i = 2;
+      }
+      else {
+	std::string emsg;
+	emsg = "Internal self-synchronization is not supported\n\tvia the automated synthesis flow.";
+	_echp = c;
+	_errmsg = Strdup (emsg.c_str());
+	return false;
+      }
     }
     break;
 
@@ -283,6 +344,7 @@ bool ActSynthesize::_check (act_chp_lang_t *c)
     fatal_error ("Unknown CHP type (%d)\n", c->type);
     break;
   }
+  nest--;
   return true;
 }
 

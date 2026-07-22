@@ -225,7 +225,7 @@ protected:
 
   void Close (); ///< close output files
 
-  bool _check (act_chp_lang_t *c);
+  bool _check (struct pHashtable *H, Scope *sc, act_chp_lang_t *c);
 
   char *_errmsg;		//< set to an error message by checkSynth()
   act_chp_lang_t *_echp;	//< used for CHP statement
