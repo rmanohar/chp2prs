@@ -206,6 +206,11 @@ class ActSynthesize {
   bool checkSynth (ActPass *ap, Process *p);
 
   /**
+   * Override this for custom checking
+   */
+  virtual bool customCheck (act_chp_lang_t *c) { return true; }
+
+  /**
    * Print error message about non-synthesizable constructs
    */
   void printSynthError (FILE *fp);

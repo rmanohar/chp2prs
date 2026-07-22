@@ -234,6 +234,10 @@ bool ActSynthesize::_check (struct pHashtable *H, Scope *sc, act_chp_lang_t *c)
 
   nest++; // used to filter top-level concurrency
 
+  if (!customCheck (c)) {
+    return false;
+  }
+
   switch (c->type) {
   case ACT_CHP_COMMA:
     if (nest == 1) {
