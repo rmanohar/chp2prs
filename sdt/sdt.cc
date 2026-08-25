@@ -486,7 +486,9 @@ void SDTEngine::run_sdt (Process *p)
 
 static void freepair (phash_bucket_t *b)
 {
-  FREE (b->v);
+  if (b->v) {
+     FREE (b->v);
+  }
 }
 
 void SDTEngine::_emit_expr_helper (int id, int *width, Expr *e)
