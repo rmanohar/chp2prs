@@ -484,16 +484,19 @@ void SDTEngine::run_sdt (Process *p)
 }
 
 
-
+static void freepair (phash_bucket_t *b)
+{
+  FREE (b->v);
+}
 
 void SDTEngine::_emit_expr_helper (int id, int *width, Expr *e)
 {
   int lw, rw;
   int lid, rid;
   int tw, tid;
+  phash_bucket_t *b;
 
   Assert (e, "Hmm");
-
 
 #define CHECK_EXPR(ex,myid,myw)					\
   do {								\
@@ -521,15 +524,34 @@ void SDTEngine::_emit_expr_helper (int id, int *width, Expr *e)
     }								\
   } while (0)
 
+#define CACHED_CHECK_EXPR(ex,id,wd)		\
+  do {						\
+    int *res;					\
+    phash_bucket_t *b;				\
+    if (_E->visited (ex)) {			\
+      b = _E->getHash (ex);			\
+      res = (int *) b->v;			\
+      id = res[0];				\
+      wd = res[1];				\
+    }						\
+    else {					\
+      CHECK_EXPR(ex,id,wd);			\
+      b = _E->getHash (ex);			\
+      MALLOC (res, int, 2);			\
+      res[0] = id;				\
+      res[1] = wd;				\
+    }						\
+  } while (0)
+  
 #define BINARY_OP				\
   do {						\
-    CHECK_EXPR(e->u.e.l, lid, lw);		\
-    CHECK_EXPR(e->u.e.r, rid, rw);		\
+    CACHED_CHECK_EXPR(e->u.e.l, lid, lw);	\
+    CACHED_CHECK_EXPR(e->u.e.r, rid, rw);	\
   } while (0)
 
 #define UNARY_OP				\
   do {						\
-    CHECK_EXPR (e->u.e.l, lid, lw);		\
+    CACHED_CHECK_EXPR (e->u.e.l, lid, lw);	\
   } while (0)
   
   switch (e->type) {
@@ -621,15 +643,15 @@ void SDTEngine::_emit_expr_helper (int id, int *width, Expr *e)
     break;
 
   case E_QUERY:
-    CHECK_EXPR (e->u.e.l, tid, tw);
+    CACHED_CHECK_EXPR (e->u.e.l, tid, tw);
     if (tw != 1) {
       warning ("Typechecking should have failed on ternary expression!");
       fprintf (stderr, "  Expr: ");
       print_uexpr (stderr, e);
       fprintf (stderr, "\n");
     }
-    CHECK_EXPR (e->u.e.r->u.e.l, lid, lw);
-    CHECK_EXPR (e->u.e.r->u.e.r, rid, rw);
+    CACHED_CHECK_EXPR (e->u.e.r->u.e.l, lid, lw);
+    CACHED_CHECK_EXPR (e->u.e.r->u.e.r, rid, rw);
     *width = MAX(lw,rw);
     _emit_expr_ite (id, *width, e->type, tid, lid, lw, rid, rw);
     break;
@@ -646,14 +668,14 @@ void SDTEngine::_emit_expr_helper (int id, int *width, Expr *e)
 
       if (!e->u.e.r) {
 	Assert (0, "singleton concat; should not happen");
-	CHECK_EXPR (e->u.e.l, lid, lw);
+	CACHED_CHECK_EXPR (e->u.e.l, lid, lw);
         return;
       }
 
       l = list_new ();
       *width = 0;
       do {
-	CHECK_EXPR (e->u.e.l, lid, lw);
+	CACHED_CHECK_EXPR (e->u.e.l, lid, lw);
 	list_iappend (l, lid);
 	list_iappend (l, lw);
 	*width += lw;
@@ -745,6 +767,10 @@ void SDTEngine::_expr_collect_vars (Expr *e, int collect_phase)
   int id;
 
   Assert (e, "Hmm");
+
+  if (_E->visited (e)) {
+    return;
+  }
 
 #define CHECK_CONCAT(f)						\
   do {								\
@@ -958,7 +984,9 @@ void SDTEngine::_emit_expr (int *id, int tgt_width, Expr *e)
   _boolconst = list_new ();
 
   CHECK_CONCAT(e);
+  _E->entry ();
   _expr_collect_vars (e, 1);
+  _E->exit ();
 
   all_leaves = list_new ();
   {
@@ -1009,13 +1037,16 @@ void SDTEngine::_emit_expr (int *id, int tgt_width, Expr *e)
   /*-- emit leaves --*/
   _intiter = list_first (_intconst);
   _booliter = list_first (_boolconst);
+  _E->entry ();
   _expr_collect_vars (e, 0);
-
+  _E->exit ();
 
   /*-- emit expression --*/
   _intiter = list_first (_intconst);
   _booliter = list_first (_boolconst);
-  CHECK_EXPR (e, myid, width);
+  _E->entry ();
+  CACHED_CHECK_EXPR (e, myid, width);
+  _E->exit (freepair);
   *id = myid;
 
   /*-- width-conversion --*/
@@ -1091,6 +1122,7 @@ SDTEngine::SDTEngine (const char *exprfile)
   else {
     _efp = NULL;
   }
+  _E = new ExprDagVisit;
 }
 
 int SDTEngine::bitWidth (ActId *id)
