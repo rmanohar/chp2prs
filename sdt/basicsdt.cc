@@ -1100,7 +1100,9 @@ void BasicSDT::_emit_begin ()
 
   _varmap = ihash_new (4);
   _isdynamic_var = 0;
+  _E->entry ();
   _construct_varmap (chp->c);
+  _E->exit ();
   if (_isdynamic_var) {
     return;
   }
@@ -1184,6 +1186,11 @@ void BasicSDT::_construct_varmap_expr (Expr *e)
   varmap_info *v;
   
   if (!e) return;
+
+  if (_E->visited (e)) {
+    return;
+  }
+  
   switch (e->type) {
     /* binary */
   case E_AND:

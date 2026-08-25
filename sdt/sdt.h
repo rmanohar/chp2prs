@@ -90,6 +90,8 @@ protected:
    */
   const char *_exprfile;
   FILE *_efp;
+
+  ExprDagVisit *_E;
   
   /* building blocks */
 
@@ -137,7 +139,7 @@ protected:
    *   NOTE: there is a default implementation that can be used, but the
    *   entire process of evaluating an expression can be overridden by
    *   replacing this method.
-   */     
+   */
   virtual void _emit_expr (int *id, int target_width, Expr *e);
 
   /*-- helper function used to emit the expression tree ---*/

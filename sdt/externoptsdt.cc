@@ -36,9 +36,12 @@ void ExternOptSDT::_emit_expr (int *id, int tgt_width, Expr *e)
   _inexprmap = ihash_new (0);
   _inwidthmap = ihash_new (0);
 
-  // run through the expr data structure and collect all variables and constants
+  // run through the expr data structure and collect all variables and
+  // constants
+  _E->entry ();
   _expr_collect_vars (e, 1);
-
+  _E->exit ();
+  
   // fill up all the leaves list with all the elements in the inexprmap
   all_leaves = list_new ();
   {
@@ -61,7 +64,9 @@ void ExternOptSDT::_emit_expr (int *id, int tgt_width, Expr *e)
   }
 
   /*-- emit leaves --*/
+  _E->entry ();
   _expr_collect_vars (e, 0);
+  _E->exit ();
 
   for (li = list_first (all_leaves); li; li = list_next (li)) {
     ihash_bucket_t *x = ihash_lookup (_inexprmap, (long) list_value (li));
@@ -487,6 +492,10 @@ void ExternOptSDT::_expr_collect_vars (Expr *e, int collect_phase)
   int id;
 
   Assert (e, "Hmm");
+
+  if (_E->visited (e)) {
+    return;
+  }
 
 #define BINARY_OP					\
   do {							\
