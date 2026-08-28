@@ -497,47 +497,48 @@ void SDTEngine::_emit_expr_helper (int id, int *width, Expr *e)
   int lid, rid;
   int tw, tid;
   phash_bucket_t *b;
+  int *res;
 
   Assert (e, "Hmm");
 
 #define CHECK_EXPR(ex,myid,myw)					\
   do {								\
-    if ((ex)->type == E_VAR) {					\
-      ihash_bucket_t *b;					\
-      b = ihash_lookup (_exprmap, (long)(ex));			\
-      Assert (b, "What?");					\
-      myid = b->i < 0 ? -b->i : b->i;				\
-      myw = bitWidth ((ActId *)(ex)->u.e.l);			\
-    }								\
-    else if ((ex)->type == E_TRUE || (ex)->type == E_FALSE) {	\
-      myid = list_ivalue (_booliter);				\
-      _booliter = list_next (_booliter);			\
-      myw = 1;							\
-    }								\
-    else if ((ex)->type == E_INT) {				\
-      myid = list_ivalue (_intiter);				\
-      _intiter = list_next (_intiter);				\
-      myw = list_ivalue (_intiter);				\
-      _intiter = list_next (_intiter);				\
+    phash_bucket_t *b;						\
+    int *res;							\
+    if (_E->visited (ex)) {					\
+      b = _E->getHash (ex);					\
+      res = (int *) b->v;					\
+      myid = res[0];						\
+      myw = res[1];						\
     }								\
     else {							\
-      phash_bucket_t *b;					\
-      int *res;							\
-      if (_E->visited (ex)) {					\
-	b = _E->getHash (ex);					\
-	res = (int *) b->v;					\
-	myid = res[0];						\
-	myw = res[1];						\
+      b = _E->getHash (ex);					\
+      MALLOC (res, int, 2);					\
+      if ((ex)->type == E_VAR) {				\
+	ihash_bucket_t *b;					\
+	b = ihash_lookup (_exprmap, (long)(ex));		\
+	Assert (b, "What?");					\
+	myid = b->i < 0 ? -b->i : b->i;				\
+	myw = bitWidth ((ActId *)(ex)->u.e.l);			\
+      }								\
+      else if ((ex)->type == E_TRUE || (ex)->type == E_FALSE) {	\
+	myid = list_ivalue (_booliter);				\
+	_booliter = list_next (_booliter);			\
+	myw = 1;						\
+      }								\
+      else if ((ex)->type == E_INT) {				\
+	myid = list_ivalue (_intiter);				\
+	_intiter = list_next (_intiter);			\
+	myw = list_ivalue (_intiter);				\
+	_intiter = list_next (_intiter);			\
       }								\
       else {							\
-	b = _E->getHash (ex);					\
-	MALLOC (res, int, 2);					\
 	myid = _gen_expr_id ();					\
 	_emit_expr_helper (myid, &myw, ex);			\
-	res[0] = myid;						\
-	res[1] = myw;						\
-	b->v = res;						\
       }								\
+      res[0] = myid;						\
+      res[1] = myw;						\
+      b->v = res;						\
     }								\
   } while (0)
   
@@ -757,6 +758,12 @@ void SDTEngine::_emit_expr_helper (int id, int *width, Expr *e)
   return;
 #undef BINARY_OP
 #undef UNARY_OP
+  _E->visited (e);
+  b = _E->getHash (e);
+  MALLOC (res, int, 2);
+  b->v = res;
+  res[0] = id;
+  res[1] = *width;
 }
 
 
@@ -766,32 +773,21 @@ void SDTEngine::_expr_collect_vars (Expr *e, int collect_phase)
 
   Assert (e, "Hmm");
 
-#define CHECK_CONCAT(f)						\
-  do {								\
-    while ((f)->type == E_CONCAT && ((f)->u.e.r == NULL)) {	\
-      (f) = (f)->u.e.l;						\
-    }								\
-  } while (0)
+  if (_E->visited (e)) {
+    return;
+  }
 
 #define BINARY_OP					\
   do {							\
-    CHECK_CONCAT (e->u.e.l);				\
-    CHECK_CONCAT (e->u.e.r);				\
     _expr_collect_vars (e->u.e.l, collect_phase);	\
     _expr_collect_vars (e->u.e.r, collect_phase);	\
   } while (0)
 
 #define UNARY_OP					\
   do {							\
-    CHECK_CONCAT (e->u.e.l);				\
     _expr_collect_vars (e->u.e.l, collect_phase);	\
   } while (0)
 
-  if (!(e->type == E_INT || e->type == E_TRUE || e->type == E_FALSE ||
-	e->type == E_VAR) && _E->visited (e)) {
-    return;
-  }
-  
   switch (e->type) {
     /* binary */
   case E_AND:
@@ -982,7 +978,13 @@ void SDTEngine::_emit_expr (int *id, int tgt_width, Expr *e)
   _intconst = list_new ();
   _boolconst = list_new ();
 
-  CHECK_CONCAT(e);
+  /*-- first, we fix the single concat issue --*/
+  _E->entry ();
+  _cleanup_concats (e);
+  _E->exit ();
+
+  
+  /*-- collect variables --*/
   _E->entry ();
   _expr_collect_vars (e, 1);
   _E->exit ();
@@ -1044,7 +1046,7 @@ void SDTEngine::_emit_expr (int *id, int tgt_width, Expr *e)
   _intiter = list_first (_intconst);
   _booliter = list_first (_boolconst);
   _E->entry ();
-  CHECK_EXPR (e, myid, width);
+  CHECK_EXPR(e, myid, width);
   _E->exit (freepair);
   *id = myid;
 
@@ -1134,4 +1136,117 @@ int SDTEngine::bitWidth (ActId *id)
     return -1;
   }
   return TypeFactory::bitWidth (it);
+}
+
+void SDTEngine::_cleanup_concats (Expr *&e)
+{
+  if (!e) return;
+
+  if (_E->visited (e)) {
+    return;
+  }
+
+#define CHECK_CONCAT(f)						\
+  do {								\
+    while ((f)->type == E_CONCAT && ((f)->u.e.r == NULL)) {	\
+      (f) = (f)->u.e.l;						\
+    }								\
+  } while (0)
+
+  CHECK_CONCAT (e);
+  
+#define BINARY_OP					\
+  do {							\
+    _cleanup_concats (e->u.e.l);			\
+    _cleanup_concats (e->u.e.r);			\
+  } while (0)
+
+#define UNARY_OP					\
+  do {							\
+    _cleanup_concats (e->u.e.l);			\
+  } while (0)
+
+  if (!(e->type == E_INT || e->type == E_TRUE || e->type == E_FALSE ||
+	e->type == E_VAR) && _E->visited (e)) {
+    return;
+  }
+  
+  switch (e->type) {
+    /* binary */
+  case E_AND:
+  case E_OR:
+  case E_XOR:
+  case E_PLUS:
+  case E_MINUS:
+  case E_LT:
+  case E_GT:
+  case E_LE:
+  case E_GE:
+  case E_EQ:
+  case E_NE:
+  case E_MULT:
+  case E_DIV:
+  case E_MOD:
+  case E_LSL:
+  case E_LSR:
+  case E_ASR:
+    BINARY_OP;
+    break;
+
+  case E_UMINUS:
+  case E_NOT:
+  case E_COMPLEMENT:
+  case E_BUILTIN_INT:
+  case E_BITFIELD:
+    UNARY_OP;
+    break;
+
+  case E_BUILTIN_BOOL:
+    UNARY_OP;
+    break;
+
+  case E_QUERY:
+    UNARY_OP;
+    e = e->u.e.r;
+    BINARY_OP;
+    break;
+
+  case E_COLON:
+  case E_COMMA:
+    fatal_error ("Should have been handled elsewhere");
+    break;
+
+    /* XXX: here */
+  case E_CONCAT:
+    do {
+      _cleanup_concats (e->u.e.l);
+      e = e->u.e.r;
+    } while (e);
+    break;
+
+  case E_REAL:
+    fatal_error ("No real expressions please.");
+    break;
+
+  case E_TRUE:
+  case E_FALSE:
+  case E_INT:
+  case E_VAR:
+    break;
+
+  case E_PROBE:
+    act_error_ctxt (stderr);
+    fatal_error ("General probed expressions are not currently supported by sdt.");
+    break;
+    
+  case E_FUNCTION:
+    fatal_error ("function!");
+  case E_SELF:
+  default:
+    fatal_error ("Unknown expression type %d\n", e->type);
+    break;
+  }
+  return;
+#undef BINARY_OP
+#undef UNARY_OP
 }
