@@ -769,7 +769,7 @@ void BasicSDT::_emit_channel_mux (varmap_info *v)
     _emit_mangled_id (output_stream, v->id);
     fprintf (output_stream, "_muxi(");
     v->id->Print (output_stream);
-    if (struct_flag > 0) {
+    if (struct_flag > 0 || v->fisuserenum) {
       fprintf (output_stream, ".%s", scn);
     }
     fprintf (output_stream, ");\n");
@@ -789,7 +789,7 @@ void BasicSDT::_emit_channel_mux (varmap_info *v)
     _emit_mangled_id (output_stream, v->id);
     fprintf (output_stream, "_muxo(");
     v->id->Print (output_stream);
-    if (struct_flag > 0) {
+    if (struct_flag > 0 || v->fisuserenum) {
       fprintf (output_stream, ".%s", scn);
     }
     fprintf (output_stream, ");\n");
@@ -868,6 +868,10 @@ void BasicSDT::_emit_variable_mux (varmap_info *v)
     fprintf (output_stream, "/*XXX*/");
   }
   v->id->Print (output_stream);
+  if (v->fisuserenum) {
+    const char *scn = config_get_string ("synth.struct_chan_name");
+    fprintf (output_stream, ".%s", scn);
+  }
   fprintf (output_stream, ");\n");
 }
 
@@ -1535,10 +1539,15 @@ varmap_info *BasicSDT::_var_getinfo (ActId *id)
     }
     v->width = bitWidth (id);
     v->fisbool = 0;
+    v->fisuserenum = 0;
     if (TypeFactory::isChanType (it)) {
       v->fischan = 1;
       if (TypeFactory::isBoolType (TypeFactory::getChanDataType (it))) {
 	v->fisbool = 1;
+      }
+      if (TypeFactory::isUserType (TypeFactory::getChanDataType (it)) &&
+	  TypeFactory::isEnum (TypeFactory::getChanDataType (it))) {
+	v->fisuserenum = 1;
       }
       if (it->getDir() == Type::direction::IN &&
 	  (!it2 || !TypeFactory::isProcessType (it2))) {
@@ -1558,6 +1567,9 @@ varmap_info *BasicSDT::_var_getinfo (ActId *id)
       v->fischan = 0;
       if (TypeFactory::isBoolType (it)) {
 	v->fisbool = 1;
+      }
+      if (TypeFactory::isUserType (it) && TypeFactory::isEnum (it)) {
+	v->fisuserenum = 1;
       }
     }
     b->v = v;

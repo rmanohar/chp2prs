@@ -2799,9 +2799,9 @@ int RingForge::_bitWidth (ActId *id)
 
 bool RingForge::need_nesting (ActId *chan)
 {
-    bool is_struct = (TypeFactory::isStructure(
-        TypeFactory::getChanDataType(_p->CurScope()->localLookup(chan, NULL))));
-    bool is_bool = (TypeFactory::isBoolType(
-        TypeFactory::getChanDataType(_p->CurScope()->localLookup(chan, NULL))));
-    return (is_bool || is_struct);
+  InstType *it = TypeFactory::getChanDataType(_p->CurScope()->localLookup(chan, NULL));
+  bool is_struct = (TypeFactory::isStructure(it));
+  bool is_bool = (TypeFactory::isBoolType(it));
+  bool is_enum = (TypeFactory::isUserType (it) && TypeFactory::isEnum (it));
+  return (is_bool || is_struct || is_enum);
 }

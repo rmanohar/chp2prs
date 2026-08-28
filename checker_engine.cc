@@ -43,8 +43,8 @@ class CheckerSynth : public ActSynthesize {
   void typeBoolChan (char *buf, int sz) { buf[0] = '\0'; }
   void runPreSynth (ActPass *ap, Process *p) { }
   bool skipOverride (ValueIdx *vx) { return true; }
-  void processStruct (Data *d) { }
-  void typeStructChan (char *buf, int sz, InstType *t) { }
+  void processStructEnum (Data *d) { }
+  void typeStructEnumChan (char *buf, int sz, InstType *t) { }
   void runSynth (ActPass *ap, Process *p) { }
 };
 

@@ -74,7 +74,7 @@ class Decomp : public ActSynthesize {
     }
   }
 
-  void processStruct (Data *d) {
+  void processStructEnum (Data *d) {
     // some special stuff for templated pure structs
     if (TypeFactory::isPureStruct(d)) {
       int n_params = d->getRemainingParams();
