@@ -181,15 +181,17 @@ class Decomp : public ActSynthesize {
 
       // projection/decomposition for slack elastic programs ------------------
       std::vector<std::unordered_map<ChpOptimize::ChanId, ActId *>> nfc = {};
+      std::vector<std::unordered_map<ChpOptimize::VarId, ActId *>> nfv = {};
       if (project) {
         Projection pr = Projection (g, p->CurScope());
         pr.project(Strategy::Timing, cycle_time_target);
         if (print_rt && ChpOptimize::isProbeFree(g.graph)) {
           pr.export_ddg_and_tg(p->getName());
         }
-        auto [names2, top_chp2, nfc2] = pr.get_final_result();
+        auto [names2, top_chp2, nfc2, nfv2] = pr.get_final_result();
         for ( auto x : names2 ) { newnames.insert(x); }
         for ( auto x : nfc2 ) { nfc.push_back(x); }
+        for ( auto x : nfv2 ) { nfv.push_back(x); }
         top_chp = top_chp2;
       }
       // ----------------------------------------------------------------------
@@ -233,6 +235,7 @@ class Decomp : public ActSynthesize {
       int len = strlen(chan_prefix);
 
       nfc.push_back(g.name_from_chan);
+      nfv.push_back(g.name_from_var);
 
       for ( auto m : nfc ) {
         for ( auto id : m ) {
@@ -245,6 +248,21 @@ class Decomp : public ActSynthesize {
             && !chans.count(std::string(channame))) {
             list_append(_decomp_vx, vx);
             chans.insert(std::string(channame));
+          }
+        }
+      }
+
+      std::string var_prefix = "_va";
+      int vpfxlen = 3;
+      for ( auto m : nfv ) {
+        for ( auto id : m ) {
+          const char *varname = (id.second)->getName();
+          ValueIdx *vx = p->CurScope()->LookupVal (varname);
+          Assert (vx, "can't find ValueIdx in scope?");
+          // TODO: there may be a better way to check for new vars..
+          // Using first 3 chars for now
+          if (strncmp(varname, var_prefix.c_str(), vpfxlen) == 0) {
+            list_append(_decomp_vx, vx);
           }
         }
       }

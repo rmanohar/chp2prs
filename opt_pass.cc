@@ -328,6 +328,8 @@ void *optimize_proc (ActPass *ap, Process *p, int mode)
 
   /* list of channels introduced */
   std::vector< std::unordered_map<ChpOptimize::ChanId, ActId *> > xnfc = {};
+  /* list of variables introduced */
+  std::vector< std::unordered_map<ChpOptimize::VarId, ActId *> > xnfv = {};
   
   if (project) {
     Projection pr = Projection (g, p->CurScope());
@@ -339,10 +341,11 @@ void *optimize_proc (ActPass *ap, Process *p, int mode)
       /* release storage for top chp here */
     }
 
-    auto [names, top_chp2, nfc] = pr.get_final_result();
+    auto [names, top_chp2, nfc, nfv] = pr.get_final_result();
 
     // update chp data and channel map structure
     xnfc = nfc;
+    xnfv = nfv;
     top_chp = top_chp2;
 
     // append new names introduced by projection
@@ -380,6 +383,7 @@ void *optimize_proc (ActPass *ap, Process *p, int mode)
   int len = strlen(chan_prefix);
 
   xnfc.push_back (g.name_from_chan);
+  xnfv.push_back (g.name_from_var);
   
   for (auto m : xnfc) {
     for (auto id : m) {
@@ -393,5 +397,19 @@ void *optimize_proc (ActPass *ap, Process *p, int mode)
       }
     }
   }
+
+  std::string var_prefix = "_va";
+  int vpfxlen = 3;
+  for ( auto m : xnfv ) {
+    for ( auto id : m ) {
+      const char *varname = (id.second)->getName();
+      ValueIdx *vx = p->CurScope()->LookupVal (varname);
+      Assert (vx, "Can't find variable vx in scope!");
+      if (strncmp(varname, var_prefix.c_str(), vpfxlen) == 0) {
+        list_append(decomp_vx, vx);
+      }
+    }
+  }
+
   return decomp_vx;
 }
