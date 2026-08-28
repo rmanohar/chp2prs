@@ -440,6 +440,7 @@ GraphWithChanNames chp_graph_from_act(act_chp_lang *lang, Scope *s, int mode) {
     graph_with_names.graph.validateGraphInvariants();
 
     graph_with_names.name_from_chan = id_pool.name_from_chan_map();
+    graph_with_names.name_from_var = id_pool.name_from_var_map();
     return graph_with_names;
 }
 
@@ -731,9 +732,9 @@ act_chp_lang *chp_graph_to_act(const GraphWithChanNames &gr,
   for (auto &[x, v] : gr.name_from_chan) {
     table.name_from_chan[x] = v;
   }
-#if 0  
+#if 1
   for (auto &[x, v] : gr.name_from_var) {
-    table.name_from_var[x] = v.
+    table.name_from_var[x] = v;
   }
 #endif  
 
@@ -1022,6 +1023,9 @@ std::unordered_map<VarId, VarId> &vv_in
   ret.graph.m_seq = deep_copy_seq (g.graph.m_seq, ret.graph, g.graph, cc, vv);
   for ( const auto &x : g.name_from_chan ) {
     ret.name_from_chan.insert({get_chan_id(x.first, ret.graph, g.graph, cc),x.second});
+  }
+  for ( const auto &x : g.name_from_var ) {
+    ret.name_from_var.insert({get_var_id(x.first, ret.graph, g.graph, vv), x.second});
   }
   ret.graph.is_static_token_form = g.graph.is_static_token_form;
   cc_in = std::move(cc);

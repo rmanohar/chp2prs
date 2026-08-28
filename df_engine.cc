@@ -55,7 +55,7 @@ class DFSynth : public ActSynthesize {
 
   bool overrideTypes() { return false; }
   
-  void processStruct(Data *d) {
+  void processStructEnum (Data *d) {
     pp_printf_raw (_pp, "/* process %s */\n", d->getName());
 		if (TypeFactory::isPureStruct(d)) {
       std::string dfn = d->getFullName();

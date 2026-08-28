@@ -144,7 +144,7 @@ class RingSynth : public ActSynthesize {
     return false;
   }
 
-  void processStruct (Data *d) {
+  void processStructEnum (Data *d) {
     if (!TypeFactory::isValidChannelDataType (d)) {
       // nothing to do here
       return;
@@ -164,7 +164,7 @@ class RingSynth : public ActSynthesize {
     emitCloseNamespace (braces);
   }
 
-  void typeStructChan (char *buf, int sz, InstType *t) {
+  void typeStructEnumChan (char *buf, int sz, InstType *t) {
     InstType *td = TypeFactory::getChanDataType(t);
     Assert (td, "What");
     char name[10240];

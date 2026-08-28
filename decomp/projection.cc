@@ -39,11 +39,13 @@ static std::mutex m;
 std::tuple<
     std::unordered_set<ActId *>, 
     act_chp_lang_t *,
-    std::vector<std::unordered_map<ChpOptimize::ChanId, ActId *>>
+    std::vector<std::unordered_map<ChpOptimize::ChanId, ActId *>>,
+    std::vector<std::unordered_map<ChpOptimize::VarId, ActId *>>
     > Projection::get_result (std::vector<act_chp_lang_t *> v_procs)
 {     
     std::unordered_set<ActId *> names = {};
     std::vector<std::unordered_map<ChpOptimize::ChanId, ActId *>> nfc = {};
+    std::vector<std::unordered_map<ChpOptimize::VarId, ActId *>> nfv = {};
 
     act_chp_lang_t *top_chp = new act_chp_lang_t;
     top_chp->label = NULL;
@@ -61,6 +63,7 @@ std::tuple<
         v = chp_graph_to_act (_g, tmp_names2, s);
         for ( auto x : tmp_names2 ) { names.insert(x); }
         nfc.push_back(_g.name_from_chan);
+        nfv.push_back(_g.name_from_var);
         // No chans -> can delete process
         // Perhaps a better way to check this
         if (_g.name_from_chan.size()>0) {
@@ -76,13 +79,14 @@ std::tuple<
         std::vector<ActId *> tmp;
         list_append(top_chp->u.semi_comma.cmd, ChpOptimize::chp_graph_to_act(*g, tmp, s));
     }
-    return {names, top_chp, nfc};
+    return {names, top_chp, nfc, nfv};
 }
 
 std::tuple<
     std::unordered_set<ActId *>, 
     act_chp_lang_t *,
-    std::vector<std::unordered_map<ChpOptimize::ChanId, ActId *>>
+    std::vector<std::unordered_map<ChpOptimize::ChanId, ActId *>>,
+    std::vector<std::unordered_map<ChpOptimize::VarId, ActId *>>
     > Projection::get_final_result ()
 {     
     return get_result(procs);
@@ -216,7 +220,7 @@ void Projection::_insert_copies_v7 (GraphWithChanNames &g, DFG &d_in)
             
             int n_wcc = d_loc.get_wccs().size();
             if (n_wcc > n_wcc_orig) {
-                auto [names, top_chp, nfc] = get_result(_build_procs(g_copy, d_loc));
+                auto [names, top_chp, nfc, nfv] = get_result(_build_procs(g_copy, d_loc));
                 _fill_in_else_explicit (top_chp, s);
                 auto g_tmp = chp_graph_from_act (top_chp, s, 1);
                 delete top_chp;
@@ -260,7 +264,7 @@ void Projection::_insert_copies_v7 (GraphWithChanNames &g, DFG &d_in)
             }
         }
 
-        auto [names, top_chp, nfc] = get_result(_build_procs(g_copy, d_loc));
+        auto [names, top_chp, nfc, nfv] = get_result(_build_procs(g_copy, d_loc));
         _fill_in_else_explicit (top_chp, s);
         g_copy = chp_graph_from_act (top_chp, s, 1);
         delete top_chp;
@@ -521,17 +525,19 @@ HyperEdgeSetVec Projection::_get_candidates_segment(const ChpTiming &ct)
     all_sccs.erase( std::remove_if(all_sccs.begin(), all_sccs.end(),
                 [&](const CompId& val) { return relevant_sccs.count(val) == 0; }),
                 all_sccs.end());
-    auto relevant_sccs_topo = all_sccs;
+    auto relevant_sccs_topo = all_sccs; // SCCs on the critical cycle, toposorted
 
     HyperEdgeSetVec hs = {};
-    std::unordered_set<CompId> itr = {};
+    std::unordered_set<CompId> scc_pfx_list = {}; // Running prefix list
     // try scc prefixes
     for ( const auto &scc_id : relevant_sccs_topo ) {
-        itr.insert(scc_id);
+        scc_pfx_list.insert(scc_id);
 
         std::unordered_set<Edge> all_outs = {};
         std::unordered_set<Edge> all_ins = {};
-        for ( const auto &si : itr ) {
+
+        // Add all edges into and out of these SCCs into working set
+        for ( const auto &si : scc_pfx_list ) {
             auto sccnodes = ct.dfg->find_scc(si);
             for ( const auto &sn : sccnodes ) {
                 all_outs = union_<Edge> (all_outs, ct.dfg->get_out_edges1(sn));
@@ -539,39 +545,32 @@ HyperEdgeSetVec Projection::_get_candidates_segment(const ChpTiming &ct)
             }
         }
 
-        std::unordered_set<Edge> all_outs_filter = {};
-        // only edges that cross over from our scc prefix to downstream
+        // --------- Filtering step ---------
+        // Basically to delete edges that are internal to current prefix list
+        std::unordered_set<Edge> all_ios_filter = {};
+
+        // Only take edges that go out of current prefix to downstream
         for ( const auto &ee : all_outs ) {
-            if (itr.count(ct.dfg->find_scc_id(ee.first)) && !itr.count(ct.dfg->find_scc_id(ee.second))) 
-                all_outs_filter.insert(ee);
+            if (scc_pfx_list.count(ct.dfg->find_scc_id(ee.first)) 
+            && !scc_pfx_list.count(ct.dfg->find_scc_id(ee.second))) 
+                all_ios_filter.insert(ee);
         }
 
-        // just reusing all_outs_filter
-        // std::unordered_set<Edge> all_ins_filter = {}; 
-        // only edges that cross over to our scc prefix from upstream
+        // Only take edges that come in to current prefix from upstream
         for ( const auto &ee : all_ins ) {
-            if (!itr.count(ct.dfg->find_scc_id(ee.first)) && itr.count(ct.dfg->find_scc_id(ee.second))) 
-                all_outs_filter.insert(ee);
+            if (!scc_pfx_list.count(ct.dfg->find_scc_id(ee.first)) 
+              && scc_pfx_list.count(ct.dfg->find_scc_id(ee.second))) 
+                all_ios_filter.insert(ee);
         }
+        // --------- Filtering step ---------
 
         HyperEdgeSet tmp = {};
-        for (const auto &[u,v] : all_outs_filter) {
+        for (const auto &[u,v] : all_ios_filter) {
             tmp[u].insert(v);
         }
         if (!tmp.empty())
             hs.push_back(tmp);
 
-        // TODO: this can be done better --------
-        // auto ps = power_set(all_outs_filter);
-        // for ( auto x1 : ps ) {
-        //     HyperEdgeSet tmp = {};
-        //     for (const auto &[u,v] : x1) {
-        //         tmp[u].insert(v);
-        //     }
-        //     if (!tmp.empty())
-        //         hs.push_back(tmp);
-        // }
-        // --------------------------------------
     }
     return hs;
 }

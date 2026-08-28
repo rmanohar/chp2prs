@@ -271,6 +271,16 @@ static int emit_refinement_header (ActSynthesize *syn,
 	if (list_next (li)) fprintf(pp->fp,";\n");
       }
     }
+    else {
+      if (TypeFactory::isEnum (u)) {
+	const char *nm = config_get_string ("synth.struct_chan_name");
+	int w = TypeFactory::bitWidth (u);
+	char buf[1024];
+	syn->typeInt (buf, 1024, w);
+	pp_printf (pp, "%s %s", buf, nm);
+      }
+    }
+    
     pp_printf (pp, ")");
     pp_forced (pp, 0);
     *braces = count;
@@ -299,7 +309,10 @@ static int emit_refinement_header (ActSynthesize *syn,
 	syn->typeBoolChan (buf, 10240);
       }
       else if (TypeFactory::isPureStruct (TypeFactory::getChanDataType (vx->t))) {
-	syn->typeStructChan (buf, 10240, vx->t);
+	syn->typeStructEnumChan (buf, 10240, vx->t);
+      }
+      else if (TypeFactory::isEnum (TypeFactory::getChanDataType (vx->t))) {
+	syn->typeStructEnumChan (buf, 10240, vx->t);
       }
       else {
 	syn->typeIntChan (buf, 10240, bw);
@@ -317,6 +330,13 @@ static int emit_refinement_header (ActSynthesize *syn,
       OVERRIDE_OPEN;
       syn->typeBool (buf, 10240);
       pp_printf_raw (pp, "%s %s;\n", buf, vx->getName());
+    }
+    else if (TypeFactory::isEnum (vx->t)) {
+      OVERRIDE_OPEN;
+      Data *d = dynamic_cast<Data *> (vx->t->BaseType());
+      Assert (d, "What?");
+      pp_printf_raw (pp, "%s_%s %s;\n", prefix, d->getUnexpanded()->getName(),
+		     vx->getName());
     }
     else if (TypeFactory::isProcessType (vx->t)
 	     || TypeFactory::isStructure (vx->t)) {
@@ -699,8 +719,8 @@ void *synthesis_data (ActPass *ap, Data *d, int mode)
   if (!syn) return NULL;
 
   if (mode == 0) {
-    if (TypeFactory::isStructure (d)) {
-      syn->processStruct (d);
+    if (TypeFactory::isStructure (d) ||	TypeFactory::isEnum (d)) {
+      syn->processStructEnum (d);
       if (!syn->overrideTypes()) {
 	return NULL;
       }

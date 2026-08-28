@@ -357,14 +357,14 @@ class DFG {
         DFG clone () {
             auto ret = DFG();
             for ( const auto &nn : nodes ) {
-                ret.nodes.push_back(std::make_unique<DFG_Node> ( std::move((*nn).clone())) );
+                ret.nodes.push_back(std::make_unique<DFG_Node> ( nn->clone() ));
             }
             ret.adj = adj;
             ret.sccs = sccs;
             ret.sccs_toposorted = sccs_toposorted;
             ret.vardefmap = vardefmap;
             ret.sccs_built = sccs_built;
-            return std::move(ret);
+            return ret;
         }
 
         DFG(const DFG&) = delete;
