@@ -97,14 +97,13 @@ class SDTSynth : public ActSynthesize {
   }
 
 
-  bool skipOverride (ValueIdx *vx) {
+  bool skipOverride (Type *t) {
     if (!chpopt_option) {
       return false;
     }
     
-    if (TypeFactory::isIntType (vx->t) ||
-	TypeFactory::isBoolType (vx->t) ||
-	TypeFactory::isStructure (vx->t)) {
+    if (TypeFactory::isIntType (t) || TypeFactory::isBoolType (t) ||
+	TypeFactory::isStructure (t)) {
       return true;
     }
     return false;

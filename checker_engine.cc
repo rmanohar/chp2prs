@@ -42,7 +42,7 @@ class CheckerSynth : public ActSynthesize {
   void typeIntChan (char *buf, int sz, int bitwidth) { buf[0] = '\0'; }
   void typeBoolChan (char *buf, int sz) { buf[0] = '\0'; }
   void runPreSynth (ActPass *ap, Process *p) { }
-  bool skipOverride (ValueIdx *vx) { return true; }
+  bool skipOverride (Type *t) { return true; }
   void processStructEnum (Data *d) { }
   void typeStructEnumChan (char *buf, int sz, InstType *t) { }
   void runSynth (ActPass *ap, Process *p) { }

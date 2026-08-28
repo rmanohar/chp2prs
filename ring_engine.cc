@@ -138,8 +138,8 @@ class RingSynth : public ActSynthesize {
     snprintf (buf, sz, "ring_chan_bool");
   }
 
-  bool skipOverride (ValueIdx *vx) {
-    if (TypeFactory::isDataType(vx->t) && TypeFactory::isBoolType(vx->t))
+  bool skipOverride (Type *t) {
+    if (TypeFactory::isDataType(t) && TypeFactory::isBoolType(t))
       return true;
     return false;
   }

@@ -719,6 +719,9 @@ void *synthesis_data (ActPass *ap, Data *d, int mode)
   if (!syn) return NULL;
 
   if (mode == 0) {
+    if (syn->skipOverride (d)) {
+      return NULL;
+    }
     if (TypeFactory::isStructure (d) ||	TypeFactory::isEnum (d)) {
       syn->processStructEnum (d);
       if (!syn->overrideTypes()) {

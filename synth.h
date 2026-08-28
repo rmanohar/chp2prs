@@ -111,7 +111,14 @@ class ActSynthesize {
   /*
    * Use this to selectively omit overrides
    */
-  virtual bool skipOverride (ValueIdx *vx) { return false; }
+  virtual bool skipOverride (Type *t) { return false; }
+
+
+  /*
+   * Another interface to skipOverride
+   */
+  bool skipOverride (ValueIdx *vx) { return skipOverride (vx->t->BaseType()); }
+
 
   /**
    * Print the name of the type that implements an n-bit integer to
