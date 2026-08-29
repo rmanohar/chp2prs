@@ -45,11 +45,16 @@ pint R2P_MERGE_MUX_PW = 3;
 // Variables and Channels ---------------------------------
 
 export template <pint M>
-deftype ring_int <: int<M> (bool d[M]) {} 
+deftype ring_int <: int<M> (bool d[M]) {}
+export template <pint NE>
+deftype ring_enum <: enum<NE> (ring_int<std::ceil_log2(NE)> CS) { }
+
 
 export deftype ring_bool <: bool (bool d[1]) {} 
 
 export defchan ring_chan <: ts_bd () {}
+export template<pint NE>
+defchan ring_enumchan <: chan(enum<NE>) (ring_chan<std::ceil_log2(NE)> CS) { }
 
 // --------------------------------------------------------
 

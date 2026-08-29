@@ -128,11 +128,17 @@ class RingSynth : public ActSynthesize {
   void typeInt (char *buf, int sz, int bitwidth) {
     snprintf (buf, sz, "ring_int<%d>", bitwidth);
   }
+  void typeEnum (char *buf, int sz, int nenums) {
+    snprintf (buf, sz, "ring_enum<%d>", nenums);
+  }
   void typeBool (char *buf, int sz) {
     snprintf (buf, sz, "ring_bool");
   }
   void typeIntChan (char *buf, int sz, int bitwidth) {
     snprintf (buf, sz, "ring_chan<%d>", bitwidth);
+  }
+  void typeEnumChan (char *buf, int sz, int nenums) {
+    snprintf (buf, sz, "ring_enumchan<%d>", nenums);
   }
   void typeBoolChan (char *buf, int sz) {
     snprintf (buf, sz, "ring_chan_bool");

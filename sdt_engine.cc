@@ -81,11 +81,17 @@ class SDTSynth : public ActSynthesize {
   void typeInt (char *buf, int sz, int bitwidth) {
     snprintf (buf, sz, "syn::sdtvar<%d>", bitwidth);
   }
+  void typeEnum (char *buf, int sz, int nenums) {
+    snprintf (buf, sz, "syn::sdtenumvar<%d>", nenums);
+  }
   void typeBool (char *buf, int sz) {
     snprintf (buf, sz, "syn::sdtboolvar");
   }
   void typeIntChan (char *buf, int sz, int bitwidth) {
     snprintf (buf, sz, "syn::sdtchan<%d>", bitwidth);
+  }
+  void typeEnumChan (char *buf, int sz, int numenums) {
+    snprintf (buf, sz, "syn::sdtenumchan<%d>", numenums);
   }
   void typeBoolChan (char *buf, int sz) {
     snprintf (buf, sz, "syn::sdtboolchan");
