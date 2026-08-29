@@ -1545,8 +1545,7 @@ varmap_info *BasicSDT::_var_getinfo (ActId *id)
       if (TypeFactory::isBoolType (TypeFactory::getChanDataType (it))) {
 	v->fisbool = 1;
       }
-      if (TypeFactory::isUserType (TypeFactory::getChanDataType (it)) &&
-	  TypeFactory::isEnum (TypeFactory::getChanDataType (it))) {
+      if (TypeFactory::isEnum (TypeFactory::getChanDataType (it))) {
 	v->fisuserenum = 1;
       }
       if (it->getDir() == Type::direction::IN &&
@@ -1568,7 +1567,7 @@ varmap_info *BasicSDT::_var_getinfo (ActId *id)
       if (TypeFactory::isBoolType (it)) {
 	v->fisbool = 1;
       }
-      if (TypeFactory::isUserType (it) && TypeFactory::isEnum (it)) {
+      if (TypeFactory::isEnum (it)) {
 	v->fisuserenum = 1;
       }
     }

@@ -111,15 +111,24 @@ class ActSynthesize {
   /*
    * Use this to selectively omit overrides
    */
-  virtual bool skipOverride (ValueIdx *vx) { return false; }
+  virtual bool skipOverride (Type *t) { return false; }
+
+
+  /*
+   * Another interface to skipOverride
+   */
+  bool skipOverride (ValueIdx *vx) { return skipOverride (vx->t->BaseType()); }
+
 
   /**
    * Print the name of the type that implements an n-bit integer to
    * the provided buffer.
    */
   virtual void typeInt (char *buf, int sz, int bitwidth) { buf[0] = '\0'; }
+  virtual void typeEnum (char *buf, int sz, int numenum) { buf[0] = '\0'; }
   virtual void typeBool (char *buf, int sz) { buf[0] = '\0'; }
   virtual void typeIntChan (char *buf, int sz, int bitwidth) { buf[0] = '\0'; }
+  virtual void typeEnumChan (char *buf, int sz, int numenum) { buf[0] = '\0'; }
   virtual void typeBoolChan (char *buf, int sz) { buf[0] = '\0'; }
   virtual void typeStructEnumChan (char *buf, int sz, InstType *t) { buf[0] = '\0'; }
 

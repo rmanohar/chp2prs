@@ -128,18 +128,24 @@ class RingSynth : public ActSynthesize {
   void typeInt (char *buf, int sz, int bitwidth) {
     snprintf (buf, sz, "ring_int<%d>", bitwidth);
   }
+  void typeEnum (char *buf, int sz, int nenums) {
+    snprintf (buf, sz, "ring_enum<%d>", nenums);
+  }
   void typeBool (char *buf, int sz) {
     snprintf (buf, sz, "ring_bool");
   }
   void typeIntChan (char *buf, int sz, int bitwidth) {
     snprintf (buf, sz, "ring_chan<%d>", bitwidth);
   }
+  void typeEnumChan (char *buf, int sz, int nenums) {
+    snprintf (buf, sz, "ring_enumchan<%d>", nenums);
+  }
   void typeBoolChan (char *buf, int sz) {
     snprintf (buf, sz, "ring_chan_bool");
   }
 
-  bool skipOverride (ValueIdx *vx) {
-    if (TypeFactory::isDataType(vx->t) && TypeFactory::isBoolType(vx->t))
+  bool skipOverride (Type *t) {
+    if (TypeFactory::isDataType(t) && TypeFactory::isBoolType(t))
       return true;
     return false;
   }

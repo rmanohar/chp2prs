@@ -303,17 +303,21 @@ static int emit_refinement_header (ActSynthesize *syn,
   auto emit_override = [&] (ValueIdx *vx) {
     int bw;
     if (TypeFactory::isChanType (vx->t)) {
+      InstType *cit = TypeFactory::getChanDataType (vx->t);
       bw = TypeFactory::bitWidth(vx->t);
       OVERRIDE_OPEN;
-      if (TypeFactory::isBoolType (TypeFactory::getChanDataType (vx->t))) {
+      if (TypeFactory::isBoolType (cit)) {
 	syn->typeBoolChan (buf, 10240);
       }
-      else if (TypeFactory::isPureStruct (TypeFactory::getChanDataType (vx->t))) {
+      else if (TypeFactory::isPureStruct (cit)) {
 	syn->typeStructEnumChan (buf, 10240, vx->t);
       }
-      else if (TypeFactory::isEnum (TypeFactory::getChanDataType (vx->t))) {
+      else if (TypeFactory::isUserType (cit) && TypeFactory::isEnum (cit)) {
 	syn->typeStructEnumChan (buf, 10240, vx->t);
       }
+      else if (TypeFactory::isEnum (cit)) {
+	syn->typeEnumChan (buf, 10240, bw);
+      }	
       else {
 	syn->typeIntChan (buf, 10240, bw);
       }
@@ -321,9 +325,15 @@ static int emit_refinement_header (ActSynthesize *syn,
     }
     else if (TypeFactory::isIntType (vx->t)) {
       /* chp-optimize creates sel0, sel1,... & loop0, loop1, ... which do not have dualrail overrides */
-      bw = TypeFactory::bitWidth(vx->t);
       OVERRIDE_OPEN;
-      syn->typeInt (buf, 10240, bw);
+      if (TypeFactory::isEnum (vx->t)) {
+	bw = TypeFactory::enumNum (vx->t);
+	syn->typeEnum (buf, 10240, bw);
+      }
+      else {
+	bw = TypeFactory::bitWidth(vx->t);
+	syn->typeInt (buf, 10240, bw);
+      }
       pp_printf_raw (pp, "%s %s;\n", buf, vx->getName());
     }
     else if (TypeFactory::isBoolType (vx->t)) {
@@ -719,6 +729,9 @@ void *synthesis_data (ActPass *ap, Data *d, int mode)
   if (!syn) return NULL;
 
   if (mode == 0) {
+    if (syn->skipOverride (d)) {
+      return NULL;
+    }
     if (TypeFactory::isStructure (d) ||	TypeFactory::isEnum (d)) {
       syn->processStructEnum (d);
       if (!syn->overrideTypes()) {

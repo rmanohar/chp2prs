@@ -27,9 +27,14 @@ open std::channel;
 namespace syn {
   export deftype sdtvar <: Mx1of2 () {}
   export deftype sdtboolvar <: bool (sdtvar<1> x) {}
+  export template<pint NE>
+  deftype sdtenumvar <: enum<NE> (sdtvar<std::ceil_log2(NE)> CS) { }
+
 
   // specify qdi datapath channels
   export defchan sdtchan <: aMx1of2 () {}
+  export template<pint NE>
+  defchan sdtenumchan <: chan(enum<NE>) (sdtchan<std::ceil_log2(NE)> CS) { }
   export defchan sdtboolchan <: chan(bool) (sdtchan<1> x) {}
 
   export template<pint N>

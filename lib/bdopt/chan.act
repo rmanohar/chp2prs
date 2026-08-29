@@ -27,6 +27,8 @@ open std::channel;
 namespace syn {
   export deftype sdtvar <: Mx1of2 () {}
   export deftype sdtboolvar <: bool (sdtvar<1> x) {}
+  export template<pint NE>
+  deftype sdtenumvar <: enum<NE> (sdtvar<std::ceil_log2(NE)> CS) { }
 
   export template<pint N>
   defchan ax1of1 <: chan(int<N>) (bool d[N]; bool a; bool r) {}
@@ -36,6 +38,8 @@ namespace syn {
 
   // specify bd datapath channels
   export defchan sdtchan <: std::channel::bd () {}
+  export template<pint NE>
+  defchan sdtenumchan <: chan(enum<NE>) (sdtchan<std::ceil_log2(NE)> CS) { }
   export defchan sdtexprchan <: rx1of1 () {}
   export defchan sdtboolchan <: std::channel::bdbool (sdtchan<1> x) 
   { x.d[0] = d; x.r = r; x.a = a; }

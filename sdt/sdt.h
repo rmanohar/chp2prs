@@ -215,7 +215,8 @@ protected:
 
   virtual void _emit_var_read_struct (int eid, ActId *v) = 0;
   
-
+  /*--- clean up concatenations ---*/
+  void _cleanup_concats (Expr *&e);
   
   /*================ Statements ====================*/
   
@@ -301,6 +302,7 @@ protected:
   /// for the process. If it is negative, there were no statements to
   /// be translated for this process.
   virtual void _emit_end (int topid) = 0;
+
 };
 
 #endif /* __CHP2PRS_STD_H__ */
