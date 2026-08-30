@@ -47,7 +47,7 @@ typedef std::unordered_map<Block *, std::pair<ChanId, State>> chan_blk_pair;
     Program-wide data structure to hold all chan ids
     and their alias info, block * etc.
 */
-typedef std::unordered_map<ChanId, chan_blk_pair> multichan_alias_struct;
+typedef std::map<ChanId, chan_blk_pair> multichan_alias_struct;
 
 /*
     Type of transition in the state table

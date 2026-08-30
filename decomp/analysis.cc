@@ -68,13 +68,16 @@ void DecompAnalysis::_populate_decomp_info_map (
         auto lo_vars = lom.find(x.first)->second;
 
         decomp_info_t di;
-        // di = decomp_info_t();
-        di.live_in_vars.clear();
-        di.live_out_vars.clear();
         di.live_in_vars = li_vars;
         di.live_out_vars = lo_vars;
-        di.live_in_vec.clear();
-        di.live_out_vec.clear();
+
+        auto xli = std::vector(li_vars.begin(),li_vars.end());
+        auto xlo = std::vector(lo_vars.begin(),lo_vars.end());
+        std::sort(xli.begin(), xli.end());
+        std::sort(xlo.begin(), xlo.end());
+        di.live_in_vec = xli;
+        di.live_out_vec = xlo;
+
         di.total_bitwidth_in = _compute_total_bits (li_vars);
         di.total_bitwidth_out = _compute_total_bits (lo_vars);
         di.break_before = false;
@@ -91,7 +94,7 @@ void DecompAnalysis::_print_decomp_info (const decomp_info_t &di)
     fprintf(fp, "\nnecessary input transmissions");
     fprintf(fp, "\nif ring is broken just before here:\n");
 
-    for (const auto &v : di.live_in_vars)
+    for (const auto &v : di.live_in_vec)
     {
         fprintf(fp, "%s, ", (str_of_id(v)).c_str());
     }	     
@@ -99,7 +102,7 @@ void DecompAnalysis::_print_decomp_info (const decomp_info_t &di)
     fprintf(fp, "\nnecessary output transmissions");
     fprintf(fp, "\nif ring is broken just after here:\n");
 
-    for (const auto &v : di.live_out_vars)
+    for (const auto &v : di.live_out_vec)
     {
         fprintf(fp, "%s, ", (str_of_id(v)).c_str());
     }	     

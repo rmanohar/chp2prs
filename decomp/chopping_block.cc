@@ -139,7 +139,6 @@ Block *ChoppingBlock::_generate_send_to_be_recvd_by(Block *bb)
 
     hassert (vmap.count(bb));
     decomp_info_t di = (vmap.find(bb))->second;
-    di.live_in_vec = std::vector<VarId> {di.live_in_vars.begin(), di.live_in_vars.end()};
 
     if (di.total_bitwidth_in == 0)
     {
@@ -151,9 +150,9 @@ Block *ChoppingBlock::_generate_send_to_be_recvd_by(Block *bb)
     ActId *id = vtoa.chanMap(chan_id);
     g->name_from_chan.insert({chan_id, id});
 
-    if (di.live_in_vars.size() == 1)
+    if (di.live_in_vec.size() == 1)
     {
-        VarId var_id = *di.live_in_vars.begin();
+        VarId var_id = *di.live_in_vec.begin();
         Block *send =
             g->graph.blockAllocator().newBlock(Block::makeBasicBlock(Statement::makeSend(
                 chan_id, ChpExprSingleRootDag::makeVariableAccess(var_id, di.total_bitwidth_in))));
@@ -169,9 +168,9 @@ Block *ChoppingBlock::_generate_send_to_be_recvd_by(Block *bb)
 
     ChpExprSingleRootDag conc_vars;
 
-    for ( auto var : di.live_in_vars )
+    for ( auto var : di.live_in_vec )
     {
-        if (var == *di.live_in_vars.begin())
+        if (var == *di.live_in_vec.begin())
         {
             conc_vars = ChpExprSingleRootDag::makeVariableAccess(var, g->graph.id_pool().getBitwidth(var));
         }
@@ -208,7 +207,6 @@ Block *ChoppingBlock::_generate_send_to_be_sent_from(Block *bb)
 
     hassert (vmap.count(bb));
     decomp_info_t di = (vmap.find(bb))->second;
-    di.live_out_vec = std::vector<VarId> {di.live_out_vars.begin(), di.live_out_vars.end()};
 
     if (di.total_bitwidth_out == 0)
     {
@@ -237,9 +235,9 @@ Block *ChoppingBlock::_generate_send_to_be_sent_from(Block *bb)
 
     ChpExprSingleRootDag conc_vars;
 
-    for ( auto var : di.live_out_vars )
+    for ( auto var : di.live_out_vec )
     {
-        if (var == *di.live_out_vars.begin())
+        if (var == *di.live_out_vec.begin())
         {
             conc_vars = ChpExprSingleRootDag::makeVariableAccess(var, g->graph.id_pool().getBitwidth(var));
         }
@@ -552,12 +550,12 @@ std::vector<Block *> ChoppingBlock::_initialize_ics(Block *curr)
     hassert (curr->type() == BlockType::DoLoop);
     decomp_info_t di = (vmap.find(curr))->second;
     
-    if (di.live_in_vars.size() == 0)
+    if (di.live_in_vec.size() == 0)
     {
         return {};
     }
 
-    for ( auto var : di.live_in_vars )
+    for ( auto var : di.live_in_vec )
     {
         Block *init_v = g->graph.blockAllocator().newBlock(
         Block::makeBasicBlock(Statement::makeAssignment(var,
