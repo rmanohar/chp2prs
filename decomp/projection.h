@@ -57,17 +57,17 @@ class Projection : protected ChoppingBlock {
             }
         
         std::tuple<
-            std::unordered_set<ActId *>, 
+            std::vector<ActId *>, 
             act_chp_lang_t *,
-            std::vector<std::unordered_map<ChpOptimize::ChanId, ActId *>>,
-            std::vector<std::unordered_map<ChpOptimize::VarId, ActId *>>
+            std::vector<std::map<ChpOptimize::ChanId, ActId *>>,
+            std::vector<std::map<ChpOptimize::VarId, ActId *>>
             > get_final_result ();
         
         std::tuple<
-            std::unordered_set<ActId *>, 
+            std::vector<ActId *>, 
             act_chp_lang_t *,
-            std::vector<std::unordered_map<ChpOptimize::ChanId, ActId *>>,
-            std::vector<std::unordered_map<ChpOptimize::VarId, ActId *>>
+            std::vector<std::map<ChpOptimize::ChanId, ActId *>>,
+            std::vector<std::map<ChpOptimize::VarId, ActId *>>
             > get_result (std::vector<act_chp_lang_t *>);
 
         /*

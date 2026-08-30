@@ -143,7 +143,7 @@ class Decomp : public ActSynthesize {
       }
       uninlineBitfieldExprsHack (g.graph);
 
-      std::unordered_set<ActId *> newnames;
+      std::vector<ActId *> newnames;
       std::vector<ActId *> tmp_names;
 
       if (!project) {
@@ -176,13 +176,13 @@ class Decomp : public ActSynthesize {
       g.graph.m_seq = g.graph.newSequence({btop});
       ChpOptimize::fillInElseExplicit(g.graph);
       act_chp_lang_t *top_chp = chp_graph_to_act (g, tmp_names, p->CurScope());
-      for ( auto x : tmp_names ) { newnames.insert(x); }
+      for ( auto x : tmp_names ) { newnames.push_back(x); }
       // ----------------------------------------------------------------------
       auto t2 = high_resolution_clock::now();
 
       // projection/decomposition for slack elastic programs ------------------
-      std::vector<std::unordered_map<ChpOptimize::ChanId, ActId *>> nfc = {};
-      std::vector<std::unordered_map<ChpOptimize::VarId, ActId *>> nfv = {};
+      std::vector<std::map<ChpOptimize::ChanId, ActId *>> nfc = {};
+      std::vector<std::map<ChpOptimize::VarId, ActId *>> nfv = {};
       if (project) {
         Projection pr = Projection (g, p->CurScope());
         pr.project(Strategy::Timing, cycle_time_target);
@@ -190,7 +190,7 @@ class Decomp : public ActSynthesize {
           pr.export_ddg_and_tg(p->getName());
         }
         auto [names2, top_chp2, nfc2, nfv2] = pr.get_final_result();
-        for ( auto x : names2 ) { newnames.insert(x); }
+        for ( auto x : names2 ) { newnames.push_back(x); }
         for ( auto x : nfc2 ) { nfc.push_back(x); }
         for ( auto x : nfv2 ) { nfv.push_back(x); }
         top_chp = top_chp2;
