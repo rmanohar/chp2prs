@@ -316,6 +316,7 @@ static int emit_refinement_header (ActSynthesize *syn,
 	syn->typeStructEnumChan (buf, 10240, vx->t);
       }
       else if (TypeFactory::isEnum (cit)) {
+	bw = TypeFactory::enumNum (vx->t);
 	syn->typeEnumChan (buf, 10240, bw);
       }	
       else {

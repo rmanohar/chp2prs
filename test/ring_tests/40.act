@@ -1,0 +1,37 @@
+
+
+defproc src (chan!(int<8>) X1, X2; chan!(enum<4>) OP) {
+  chp {
+    *[ X1!6, X2!7, OP!2 ]
+  }
+}
+
+defproc alu (chan?(int<8>) X1, X2; chan?(enum<4>) OP; chan!(int<8>) Y) {
+  int<8> x1, x2, y;
+  enum<4> opcode;
+  chp {
+    *[ 
+      X1?x1, X2?x2, OP?opcode;
+      [ opcode = 0 -> y := x1+x2
+      []opcode = 1 -> y := x1-x2
+      []opcode = 2 -> y := x1*x2
+      []opcode = 3 -> y := x1/x2
+      ];
+      Y!y
+    ]
+  }
+}
+
+defproc snk (chan?(int<8>) Y) {
+  int<8> y;
+  chp {
+    *[ Y?y ]
+  }
+}
+
+defproc testproc (chan!(int<8>) Y) {
+  src sr;
+  snk sn;
+  alu a (sr.X1, sr.X2, sr.OP, sn.Y);
+  Y = sn.Y;
+}

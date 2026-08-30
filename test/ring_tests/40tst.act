@@ -1,0 +1,28 @@
+import globals;
+import "40.act";
+import "40_ring.act";
+
+defproc test()
+{
+  ring_testproc t;
+  bool ar, aa;
+  bool ad[8];
+  ar = t.Y.r;
+  aa = t.Y.a;
+  ad = t.Y.d;
+  chp {
+      [
+      // 42
+      (
+      ad[0]=false & 
+      ad[1]=true  & 
+      ad[2]=false & 
+      ad[3]=true  &
+      ad[4]=false &
+      ad[5]=true  &
+      ad[6]=false &
+      ad[7]=false
+      )
+      -> log("SUCCESS")]
+  }
+}
