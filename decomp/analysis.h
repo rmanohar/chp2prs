@@ -31,7 +31,9 @@
 using namespace ChpOptimize;
 
 /*
-    Per-block information structure
+    Per-block information structure.
+    Vectors hold the same info but are 
+    used for iteration order preservation.
 */
 typedef struct decomp_info {
     std::unordered_set<VarId> live_in_vars;

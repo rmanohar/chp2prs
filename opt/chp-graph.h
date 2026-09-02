@@ -820,8 +820,8 @@ class ChpGraph {
 
 struct GraphWithChanNames {
     ChpGraph graph;
-    std::unordered_map<ChanId, ActId *> name_from_chan;
-    std::unordered_map<VarId, ActId *> name_from_var;
+    std::map<ChanId, ActId *> name_from_chan;
+    std::map<VarId, ActId *> name_from_var;
 };
   
 GraphWithChanNames chp_graph_from_act(act_chp_lang *lang, Scope *s, int mode = 0);

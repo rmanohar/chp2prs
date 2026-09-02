@@ -37,15 +37,15 @@ static std::mutex m;
 */
 
 std::tuple<
-    std::unordered_set<ActId *>, 
+    std::vector<ActId *>, 
     act_chp_lang_t *,
-    std::vector<std::unordered_map<ChpOptimize::ChanId, ActId *>>,
-    std::vector<std::unordered_map<ChpOptimize::VarId, ActId *>>
+    std::vector<std::map<ChpOptimize::ChanId, ActId *>>,
+    std::vector<std::map<ChpOptimize::VarId, ActId *>>
     > Projection::get_result (std::vector<act_chp_lang_t *> v_procs)
 {     
-    std::unordered_set<ActId *> names = {};
-    std::vector<std::unordered_map<ChpOptimize::ChanId, ActId *>> nfc = {};
-    std::vector<std::unordered_map<ChpOptimize::VarId, ActId *>> nfv = {};
+    std::vector<ActId *> names = {};
+    std::vector<std::map<ChpOptimize::ChanId, ActId *>> nfc = {};
+    std::vector<std::map<ChpOptimize::VarId, ActId *>> nfv = {};
 
     act_chp_lang_t *top_chp = new act_chp_lang_t;
     top_chp->label = NULL;
@@ -61,7 +61,7 @@ std::tuple<
         ChpOptimize::parallelizeStatements (_g.graph);
         std::vector<ActId *> tmp_names2;
         v = chp_graph_to_act (_g, tmp_names2, s);
-        for ( auto x : tmp_names2 ) { names.insert(x); }
+        for ( auto x : tmp_names2 ) { names.push_back(x); }
         nfc.push_back(_g.name_from_chan);
         nfv.push_back(_g.name_from_var);
         // No chans -> can delete process
@@ -83,10 +83,10 @@ std::tuple<
 }
 
 std::tuple<
-    std::unordered_set<ActId *>, 
+    std::vector<ActId *>, 
     act_chp_lang_t *,
-    std::vector<std::unordered_map<ChpOptimize::ChanId, ActId *>>,
-    std::vector<std::unordered_map<ChpOptimize::VarId, ActId *>>
+    std::vector<std::map<ChpOptimize::ChanId, ActId *>>,
+    std::vector<std::map<ChpOptimize::VarId, ActId *>>
     > Projection::get_final_result ()
 {     
     return get_result(procs);

@@ -284,7 +284,7 @@ void *optimize_proc (ActPass *ap, Process *p, int mode)
 
   // we keep track of the new names introduced by explicit
   // decomposition here. 
-  std::unordered_set<ActId *> newnames;
+  std::vector<ActId *> newnames;
 
   act_chp_lang_t *top_chp = NULL;
   
@@ -322,14 +322,14 @@ void *optimize_proc (ActPass *ap, Process *p, int mode)
     std::vector<ActId *> tmp_names;
     act_chp_lang_t *top_chp = chp_graph_to_act (g, tmp_names, p->CurScope());
     for (auto x : tmp_names) {
-      newnames.insert (x);
+      newnames.push_back (x);
     }
   }
 
   /* list of channels introduced */
-  std::vector< std::unordered_map<ChpOptimize::ChanId, ActId *> > xnfc = {};
+  std::vector< std::map<ChpOptimize::ChanId, ActId *> > xnfc = {};
   /* list of variables introduced */
-  std::vector< std::unordered_map<ChpOptimize::VarId, ActId *> > xnfv = {};
+  std::vector< std::map<ChpOptimize::VarId, ActId *> > xnfv = {};
   
   if (project) {
     Projection pr = Projection (g, p->CurScope());
@@ -350,7 +350,7 @@ void *optimize_proc (ActPass *ap, Process *p, int mode)
 
     // append new names introduced by projection
     for (auto x : names) {
-      newnames.insert (x);
+      newnames.push_back (x);
     }
   }
 

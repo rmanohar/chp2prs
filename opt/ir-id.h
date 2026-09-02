@@ -27,6 +27,7 @@
 #include <compare>
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -367,10 +368,10 @@ class NameParsingIdPool {
 
     using ActIdDataPtr = act_connection *;
 
-    std::unordered_map<VarId, ActId *> m_varid_to_actid{};
+    std::map<VarId, ActId *> m_varid_to_actid{};
     std::unordered_map<ActIdDataPtr, VarId> m_actid_to_varid{};
 
-    std::unordered_map<ChanId, ActId *> m_chanid_to_actid{};
+    std::map<ChanId, ActId *> m_chanid_to_actid{};
     std::unordered_map<ActIdDataPtr, ChanId> m_actid_to_chanid{};
 
     IdPool m_id_pool;  ///< The Id pool used for the scope
@@ -413,9 +414,9 @@ class NameParsingIdPool {
         return m_id_pool.makeUniqueVar(bitwidth, is_bool);
     }
 
-    [[nodiscard]] std::unordered_map<ChanId, ActId *>
+    [[nodiscard]] std::map<ChanId, ActId *>
     name_from_chan_map() const;
-    [[nodiscard]] std::unordered_map<VarId, ActId *>
+    [[nodiscard]] std::map<VarId, ActId *>
     name_from_var_map() const;
 };
 

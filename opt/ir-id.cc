@@ -155,12 +155,12 @@ const char *NameParsingIdPool::getName(const ChanId &id) {
     return m_chanid_to_actid.at(id)->getName();
 }
 
-[[nodiscard]] std::unordered_map<ChanId, ActId *>
+[[nodiscard]] std::map<ChanId, ActId *>
 NameParsingIdPool::name_from_chan_map() const {
   return m_chanid_to_actid;
 }
 
-[[nodiscard]] std::unordered_map<VarId, ActId *>
+[[nodiscard]] std::map<VarId, ActId *>
 NameParsingIdPool::name_from_var_map() const {
   return m_varid_to_actid;
 }
