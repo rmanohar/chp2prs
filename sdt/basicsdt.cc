@@ -1104,9 +1104,7 @@ void BasicSDT::_emit_begin ()
 
   _varmap = ihash_new (4);
   _isdynamic_var = 0;
-  _E->entry ();
   _construct_varmap (chp->c);
-  _E->exit ();
   if (_isdynamic_var) {
     return;
   }
@@ -1298,7 +1296,7 @@ void BasicSDT::_construct_varmap_expr (Expr *e)
     v = _var_getinfo ((ActId *)e->u.e.l);
     if (!_shared_expr_var || !v->fcurexpr) {
       Assert (v->fischan, "What?");
-#if 0      
+#if 0
       v->nread++;
       v->fcurexpr = 1;
 #endif      
@@ -1361,7 +1359,9 @@ void BasicSDT::_construct_varmap (act_chp_lang_t *c)
     x = v->nread;
     v->nwrite++;
     _clear_var_flags ();
+    _E->entry ();
     _construct_varmap_expr (c->u.assign.e);
+    _E->exit ();
     if (x != v->nread) {
       c->type = ACT_CHP_ASSIGNSELF;
     }
@@ -1384,7 +1384,9 @@ void BasicSDT::_construct_varmap (act_chp_lang_t *c)
     v->nwrite++;
     _clear_var_flags ();
     if (c->u.comm.e) {
+      _E->entry ();
       _construct_varmap_expr (c->u.comm.e);
+      _E->exit ();
     }
     break;
   case ACT_CHP_RECV:
@@ -1448,7 +1450,9 @@ void BasicSDT::_construct_varmap (act_chp_lang_t *c)
       _block_id = -2;
     }
     for (listitem_t *li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
+      _E->entry ();
       _construct_varmap ((act_chp_lang_t *) list_value (li));
+      _E->exit ();
       if (changed) {
 	_block_id++;
       }
@@ -1468,7 +1472,9 @@ void BasicSDT::_construct_varmap (act_chp_lang_t *c)
       _clear_var_flags ();
       while (gc) {
 	if (gc->g) {
+	  _E->entry ();
 	  _construct_varmap_expr (gc->g);
+	  _E->exit ();
 	}
 	gc = gc->next;
       }
@@ -1477,7 +1483,9 @@ void BasicSDT::_construct_varmap (act_chp_lang_t *c)
       gc = c->u.gc;
       while (gc) {
 	_clear_var_flags ();
+	_E->entry ();
 	_construct_varmap (gc->s);
+	_E->exit ();
 	gc = gc->next;
       }
     }
