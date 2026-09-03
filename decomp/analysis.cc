@@ -22,6 +22,8 @@
 
 #include "analysis.h"
 
+#include <algorithm>
+
 using namespace ChpOptimize;
 
 // TODO: fix this name generation, need to get the original mapped names
