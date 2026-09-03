@@ -45,7 +45,7 @@ SUBDIRS=lib opt sdt ring decomp
 
 include $(ACT_HOME)/scripts/Makefile.std
 
-EXPRLIB=-lexpropt_sh $(ACT_HOME)/lib/libabc.so
+EXPRLIB=-lexpropt_sh
 
 SYNTHLIB=-lactchpopt -lactchpsdt -lactchpring -lactchpdecomp
 
